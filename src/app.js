@@ -1,35 +1,32 @@
-import generator from './modules/generator'
-import path from 'path'
-import fs from 'fs'
+import generator from "./modules/generator";
+import path from "path";
+import fs from "fs";
 
 async function main() {
+  let maxDirectories = 100;
+  let maximunDepth = 10;
 
-    let heightDepth = 8
-    let widthDepth = 4
+  let config = {
+    host: "192.168.10.243",
+    username: "root",
+    password: "sinsiway",
+  };
 
-    let lists = new Object()
+  let dirOpt = {
+    base: "/workspace",
+    count: 10000,
+    maximumDepth: 10,
+  };
 
-    let level = 1
-    let count = 0
-    
-    let maxCount = 100000;
+  let fileOpt = {};
 
-    let targetList = await generator.getDirList(300000)
+  console.time();
+  await generator.make(config, dirOpt, fileOpt);
+  console.timeEnd();
 
-    let maximumDepth = 0
-    for(let i = 0; i < targetList.length; i++ ){
-        let temp = targetList[i]
-        
-        let count = (temp.match(/\//g) || []).length;
-        if(count > maximumDepth) maximumDepth = count
-        
-    }
-    console.log(`maximumDepth : ${maximumDepth}`)
-    //fs.writeFileSync('./rst.txt', targetList)
-
-   
-    
+  // for(let i = 0; i < 10 ; i ++ ){
+  //     console.log(directoryies[i])
+  // }
 }
 
-
-main()
+main();

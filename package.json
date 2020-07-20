@@ -22,5 +22,10 @@
     "@babel/core": "^7.10.4",
     "@babel/node": "^7.10.4",
     "@babel/preset-env": "^7.10.4"
+  },
+  "dependencies": {
+    "cli-progress": "^3.8.2",
+    "lodash": "^4.17.19",
+    "node-ssh": "^10.0.2"
   }
 }
