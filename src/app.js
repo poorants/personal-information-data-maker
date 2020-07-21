@@ -1,8 +1,9 @@
-import generator from "./modules/generator";
+import Generator from "./modules/generator";
 import path from "path";
 import fs from "fs";
 
 async function main() {
+  let generator = new Generator();
   let maxDirectories = 100;
   let maximunDepth = 10;
 
@@ -18,15 +19,15 @@ async function main() {
     maximumDepth: 10,
   };
 
-  let fileOpt = {};
+  let fileOpt = {
+    garbageFiles: 900,
+    garbageImageFiles: 500,
+    personalFileFiles: 300,
+    personalImageFiles: 300,
+    MaximumFilesPerPath: 20,
+  };
 
-  console.time();
-  await generator.make(config, dirOpt, fileOpt);
-  console.timeEnd();
-
-  // for(let i = 0; i < 10 ; i ++ ){
-  //     console.log(directoryies[i])
-  // }
+  generator.testEnvironmentSettings(config, dirOpt, fileOpt);
 }
 
 main();

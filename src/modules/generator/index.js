@@ -1,60 +1,45 @@
 import dir from "./generate-directory";
-import _ from "lodash";
+import file from "./generate-file";
+import _, { set } from "lodash";
 import nodeSsh from "node-ssh";
-import path from "path";
-import cliProgress from "cli-progress";
 
-async function make(config = {}, dirOpt = {}, fileOpt = {}) {
-  let session = new nodeSsh();
-  const makeDirectoryBar = new cliProgress.SingleBar(
-    {},
-    cliProgress.Presets.legacy
-  );
+export default class Generator {
+  constructor() {}
 
-  try {
-    await session.connect(config).catch((err) => {
-      if (err) {
-        console.log(config);
-        throw new Error(`remote connect failed: ${err.message}`);
-      }
-    });
+  async testEnvironmentSettings(config, dirOpt, fileOpt) {
+    try {
+      let directoryList = await dir.getDirectories(dirOpt);
+      //   await dir.createDirectories(config, directoryList);
+      let garbageFileList = await file.getGarbageFileList(
+        directoryList,
+        fileOpt.garbageFiles,
+        fileOpt.MaximumFilesPerPath
+      );
 
-    let directories = await dir.getDirList(
-      dirOpt.base,
-      dirOpt.count,
-      dirOpt.maximumDepth
-    );
+      let personalFileList = await file.getPersonalFileList(
+        directoryList,
+        fileOpt.personalFileFiles,
+        fileOpt.MaximumFilesPerPath
+      );
 
-    makeDirectoryBar.start(directories.length);
+      let garbageImageList = await file.getGarbageImageList(
+        directoryList,
+        fileOpt.garbageImageFiles,
+        fileOpt.MaximumFilesPerPath
+      );
 
-    let command = "";
-    let fetchRows = 500;
-
-    for (let i = 0; i < directories.length; i++) {
-      if (i % fetchRows === 0 && i !== 0) {
-        await session.execCommand(command).then((res) => {
-          if (res.stderr) console.log(res);
-        });
-
-        makeDirectoryBar.update(i);
-        command = "";
-      }
-      command += `mkdir -p "${directories[i]}"\n`;
+      let personalImageList = await file.getPersonalImageList(
+        directoryList,
+        fileOpt.personalImageFiles,
+        fileOpt.MaximumFilesPerPath
+      );
+      console.log(personalImageList);
+    } catch (e) {
+      console.log(e.message);
     }
-
-    makeDirectoryBar.update(directories.length);
-    await session.execCommand(command).then((res) => {
-      if (res.stderr) console.log(res);
-    });
-
-    makeDirectoryBar.stop();
-  } catch (e) {
-    console.log(e.message);
   }
-
-  session.dispose();
 }
 
-export default {
-  make,
-};
+// export default {
+//   make,
+// };
