@@ -1,7 +1,0 @@
-{
-    "image": ["tiff","jpeg","png","gif"],
-    "document": ["xls","ppt","pdf","doc"],
-    "code": ["java","js","css","html"],
-    "media": ["mp3","mov","avi","mpeg"],
-    "text": ["txt"]
-} 

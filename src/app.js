@@ -20,10 +20,10 @@ async function main() {
   };
 
   let fileOpt = {
-    garbageFiles: 900,
-    garbageImageFiles: 500,
-    personalFileFiles: 300,
-    personalImageFiles: 300,
+    garbageFiles: 10,
+    garbageImageFiles: 10,
+    personalFileFiles: 10,
+    personalImageFiles: 10,
     MaximumFilesPerPath: 20,
   };
 

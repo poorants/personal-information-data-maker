@@ -1,0 +1,10 @@
+{
+  "config": {
+    "file": {
+      "csv": { "maxField": 10, "maxRows": 20 },
+      "text": {
+        "maxWords": 200
+      }
+    }
+  }
+}

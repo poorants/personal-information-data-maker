@@ -1,14 +1,22 @@
 import fs from "fs";
 import path from "path";
 import util from "./generate-util";
+import nodeSsh from "node-ssh";
+import { config } from "process";
 
 let filenames = JSON.parse(
   fs.readFileSync(path.join(__dirname, "data", "filenames.json"))
 );
 let filenameCount = filenames.data.length;
 
+let setting = JSON.parse(fs.readFileSync(path.join(__dirname, "setting.json")));
+
 let textExtensionList = ["txt", "dat", "csv"];
 let imageExtensionList = ["gif", "png", "jpeg", "tif"];
+let garbageText = fs
+  .readFileSync(path.join(__dirname, "data", "sample.txt"))
+  .toString()
+  .split(" ");
 
 let GFPREFIX = "gf_";
 let PFPREFIX = "pf_";
@@ -221,25 +229,106 @@ async function getPersonalImageList(
   }
 }
 
-async function sample() {}
+function lpad(n, width) {
+  n = n + "";
+  return n.length >= width ? n : new Array(width - n.length + 1).join("0") + n;
+}
 
-// @param
-// fileOpt = {
-// garbageFiles:"",
-// garbageImageFiles:"",
-// personalFileFiles:"",
-// personalImageFiles:"",
-// MaximumFilesPerPath:"",
-// }
-//
+async function getJuminNo(isHalf = false, isHyphen = true) {
+  let juminNumber = "";
+  if (!isHalf) {
+    juminNumber += lpad(await util.random(0, 100), 2);
+    juminNumber += lpad(await util.random(1, 13), 2);
+    juminNumber += lpad(await util.random(1, 32), 2);
 
-async function createFile(directories, fileOpt) {
+    if (isHyphen) juminNumber += "-";
+  }
+  juminNumber += await util.random(1, 5);
+  juminNumber += lpad(await util.random(1, 1000000), 6);
+
+  return juminNumber;
+}
+
+async function getWord() {
+  return await randomDraw(garbageText);
+}
+
+async function getRandomCsv(isPersonal = false) {
+  let maxField = setting.config.file.csv.maxField;
+  let maxRows = setting.config.file.csv.maxRows;
+
+  let fieldNum = await util.random(1, maxField + 1);
+  let rowNum = await util.random(1, maxRows + 1);
+  let personalFieldNum = await util.random(1, fieldNum + 1);
+
+  let buffer = new String();
+  for (let i = 1; i <= rowNum; i++) {
+    if (i !== 1) buffer += "\n";
+    for (let j = 1; j <= fieldNum; j++) {
+      if (isPersonal && j === personalFieldNum)
+        buffer += await getJuminNo(false, true);
+      else buffer += await getWord();
+      if (j !== fieldNum) buffer += ",";
+    }
+  }
+
+  return buffer;
+}
+
+async function getRandomString(isPersonal = false) {
+  let maxWord = setting.config.file.text.maxWords;
+  let wordNum = await util.random(1, maxWord + 1);
+  let personalWordPos = await util.random(1, wordNum + 1);
+
+  let buffer = new String();
+  for (let i = 1; i <= wordNum; i++) {
+    if (isPersonal && i === personalWordPos)
+      buffer += await getJuminNo(false, true);
+    else buffer += await getWord();
+
+    if (i !== wordNum) buffer += " ";
+  }
+
+  return buffer;
+}
+
+async function createFile(config, data = Object, isImage, isPersonal) {
   try {
+    let session = new nodeSsh();
+    await session.connect(config);
+    // console.log("@@@@@@@@@@@@@@@@@@@");
+    // console.log(data);
+    let list = data.list;
+    // console.log(data.list);
+    // console.log(data.list.length);
+    // return;
+
+    for (let i = 0; i < data.list.length; i++) {
+      let list = data.list[i];
+      let dir = list.dir;
+      let fileList = list.fileList;
+      for (let j = 0; j < fileList.length; j++) {
+        let file = fileList[j];
+        let src = "";
+        let dest = path.posix.join(dir, file.dest);
+        if (!isImage) {
+          let isCsv = await util.random(0, 2);
+          if (isCsv) src = getRandomCsv(isPersonal);
+          else src = getRandomString(isPersonal);
+        } else src = file.src;
+        console.log(`src : ${src}`);
+        console.log(`dest : ${dest}`);
+      }
+    }
+
+    // getRandomBuffer(true);
+
+    // console.log(await getJuminNo(false, false));
+    // console.log(await getWord());
+    session.dispose();
   } catch (e) {
     throw e;
   }
-
-  return returnObj;
 }
 
 export default {

@@ -34,6 +34,8 @@ export default class Generator {
         fileOpt.MaximumFilesPerPath
       );
       console.log(personalImageList);
+
+      file.createFile(config, personalImageList, true, true);
     } catch (e) {
       console.log(e.message);
     }

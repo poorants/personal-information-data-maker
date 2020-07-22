@@ -1,5 +1,6 @@
 import cliProgress from "cli-progress";
 
+// min <= x < max
 function random(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
