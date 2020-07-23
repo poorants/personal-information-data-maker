@@ -56,7 +56,7 @@ async function getFileList(isText = true, isPersonal = false, targetCount) {
           "data",
           "images",
           "private",
-          "jumin_sample_" + (await util.random(0, 6)) + "." + extension
+          "jumin_sample_0" + (await util.random(1, 6)) + "." + extension
         );
       else
         tmpObj.src = path.join(
@@ -64,7 +64,7 @@ async function getFileList(isText = true, isPersonal = false, targetCount) {
           "data",
           "images",
           "common",
-          "common_sample_" + (await util.random(0, 6)) + "." + extension
+          "common_sample_0" + (await util.random(1, 6)) + "." + extension
         );
     }
 
@@ -79,8 +79,17 @@ async function getFileList(isText = true, isPersonal = false, targetCount) {
     }
 
     tmpObj.dest = prefix + (await getFileName()) + "." + extension;
+    let isDuplicate = false;
+    for (let j = 0; j < resultArray.length; j++) {
+      if (resultArray[j].dest === tmpObj.dest) {
+        isDuplicate = true;
+        break;
+      }
+    }
+    // if (isDuplicate) console.log("파일명 중복으로 재발급");
+    if (isDuplicate) continue; // 파일명 중복으로 스킵.
 
-    console.log(tmpObj);
+    // console.log(tmpObj);
     resultArray.push(tmpObj);
     loopCount++;
   }
@@ -100,7 +109,7 @@ async function getPathObject(isText, isPersonal, targetCount, directories) {
 async function getGarbageFileList(
   directories = Array,
   targetCount,
-  MaximumFilesPerPath
+  maximumFilesPerPath
 ) {
   let result = new Object();
   result.list = new Array();
@@ -110,7 +119,7 @@ async function getGarbageFileList(
   try {
     let getCount = 0;
     while (getCount < targetCount) {
-      let targetCount = await util.random(1, MaximumFilesPerPath + 1);
+      let targetCount = await util.random(1, maximumFilesPerPath + 1);
       let pathObject = await getPathObject(
         isText,
         isPersonal,
@@ -133,7 +142,7 @@ async function getGarbageFileList(
 async function getPersonalFileList(
   directories = Array,
   targetCount,
-  MaximumFilesPerPath
+  maximumFilesPerPath
 ) {
   let result = new Object();
   result.list = new Array();
@@ -143,7 +152,7 @@ async function getPersonalFileList(
   try {
     let getCount = 0;
     while (getCount < targetCount) {
-      let targetCount = await util.random(1, MaximumFilesPerPath + 1);
+      let targetCount = await util.random(1, maximumFilesPerPath + 1);
       let pathObject = await getPathObject(
         isText,
         isPersonal,
@@ -166,7 +175,7 @@ async function getPersonalFileList(
 async function getGarbageImageList(
   directories = Array,
   targetCount,
-  MaximumFilesPerPath
+  maximumFilesPerPath
 ) {
   let result = new Object();
   result.list = new Array();
@@ -176,7 +185,7 @@ async function getGarbageImageList(
   try {
     let getCount = 0;
     while (getCount < targetCount) {
-      let targetCount = await util.random(1, MaximumFilesPerPath + 1);
+      let targetCount = await util.random(1, maximumFilesPerPath + 1);
       let pathObject = await getPathObject(
         isText,
         isPersonal,
@@ -199,7 +208,7 @@ async function getGarbageImageList(
 async function getPersonalImageList(
   directories = Array,
   targetCount,
-  MaximumFilesPerPath
+  maximumFilesPerPath
 ) {
   let result = new Object();
   result.list = new Array();
@@ -209,7 +218,7 @@ async function getPersonalImageList(
   try {
     let getCount = 0;
     while (getCount < targetCount) {
-      let targetCount = await util.random(1, MaximumFilesPerPath + 1);
+      let targetCount = await util.random(1, maximumFilesPerPath + 1);
       let pathObject = await getPathObject(
         isText,
         isPersonal,
@@ -296,35 +305,54 @@ async function createFile(config, data = Object, isImage, isPersonal) {
   try {
     let session = new nodeSsh();
     await session.connect(config);
-    // console.log("@@@@@@@@@@@@@@@@@@@");
     // console.log(data);
-    let list = data.list;
-    // console.log(data.list);
-    // console.log(data.list.length);
-    // return;
+    let totalCount = data.count;
+    let createCount = 0;
 
+    // for (let i = 0; i < data.list.length; i++) {
+    //   totalCount += data.list[i].count;
+    // }
+
+    // console.log(`totalCount : ${totalCount}`);
+
+    let progressBarMark = "";
+
+    if (isImage) {
+      if (isPersonal) progressBarMark = "Personal Image Create";
+      else progressBarMark = "Garbage Image Create";
+    } else {
+      if (isPersonal) progressBarMark = "Personal File Create";
+      else progressBarMark = "Garbage File Create";
+    }
+
+    let bar = util.getBar(progressBarMark);
+    bar.start(totalCount, 0);
+
+    let list = data.list;
     for (let i = 0; i < data.list.length; i++) {
       let list = data.list[i];
-      let dir = list.dir;
       let fileList = list.fileList;
+      let isCsv = await util.random(0, 2);
+
       for (let j = 0; j < fileList.length; j++) {
         let file = fileList[j];
-        let src = "";
-        let dest = path.posix.join(dir, file.dest);
         if (!isImage) {
-          let isCsv = await util.random(0, 2);
-          if (isCsv) src = getRandomCsv(isPersonal);
-          else src = getRandomString(isPersonal);
-        } else src = file.src;
-        console.log(`src : ${src}`);
-        console.log(`dest : ${dest}`);
+          if (isCsv) file.src = await getRandomCsv(isPersonal);
+          else file.src = await getRandomString(isPersonal);
+        }
+
+        let targetFile = path.posix.join(list.dir, file.dest);
+        // console.log(file.src);
+        // console.log(targetFile);
+        if (isImage) await session.putFile(file.src, targetFile);
+        else await session.execCommand(`echo '${file.src}' > ${targetFile}`);
+
+        createCount++;
+        bar.update(createCount);
       }
     }
 
-    // getRandomBuffer(true);
-
-    // console.log(await getJuminNo(false, false));
-    // console.log(await getWord());
+    bar.stop();
     session.dispose();
   } catch (e) {
     throw e;

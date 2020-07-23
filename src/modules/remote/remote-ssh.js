@@ -45,9 +45,30 @@ export default class RemoteSsh {
           password: config.password,
           port: config.port === undefined ? 22 : config.port,
           algorithms: {
-            kex: ["diffie-hellman-group1-sha1", "ecdh-sha2-nistp256", "ecdh-sha2-nistp384", "ecdh-sha2-nistp521", "diffie-hellman-group-exchange-sha256", "diffie-hellman-group14-sha1"],
-            cipher: ["3des-cbc", "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-gcm", "aes128-gcm@openssh.com", "aes256-gcm", "aes256-gcm@openssh.com"],
-            serverHostKey: ["ssh-rsa", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp521"],
+            kex: [
+              "diffie-hellman-group1-sha1",
+              "ecdh-sha2-nistp256",
+              "ecdh-sha2-nistp384",
+              "ecdh-sha2-nistp521",
+              "diffie-hellman-group-exchange-sha256",
+              "diffie-hellman-group14-sha1",
+            ],
+            cipher: [
+              "3des-cbc",
+              "aes128-ctr",
+              "aes192-ctr",
+              "aes256-ctr",
+              "aes128-gcm",
+              "aes128-gcm@openssh.com",
+              "aes256-gcm",
+              "aes256-gcm@openssh.com",
+            ],
+            serverHostKey: [
+              "ssh-rsa",
+              "ecdsa-sha2-nistp256",
+              "ecdsa-sha2-nistp384",
+              "ecdsa-sha2-nistp521",
+            ],
             hmac: ["hmac-sha2-256", "hmac-sha2-512", "hmac-sha1"],
           },
         });
@@ -73,9 +94,11 @@ export default class RemoteSsh {
         do {
           tryCount++;
           if (tryCount >= limit) break;
-          complete = await this.session.putDirectory(localDirectory, remoteDirectory).then((res) => {
-            return res;
-          });
+          complete = await this.session
+            .putDirectory(localDirectory, remoteDirectory)
+            .then((res) => {
+              return res;
+            });
         } while (!complete);
         resolve();
       } catch (e) {
@@ -89,9 +112,11 @@ export default class RemoteSsh {
     return new Promise(async (resolve, reject) => {
       try {
         await this.connect(this.config);
-        const result = await this.session.execCommand(command, options).then((res) => {
-          return res;
-        });
+        const result = await this.session
+          .execCommand(command, options)
+          .then((res) => {
+            return res;
+          });
         resolve(result);
       } catch (e) {
         console.log(`execCommand Error : \n${e}`);
@@ -104,10 +129,16 @@ export default class RemoteSsh {
     return new Promise(async (resolve, reject) => {
       try {
         await this.connect(this.config);
-        const result = await this.session.execCommand(command, option).then((res) => {
-          return res;
-        });
-        if (_.isString(result.stderr)) if (result.stderr) throw new Error(`command fail [ ${command} ], stderr [ ${result.stderr} ]`);
+        const result = await this.session
+          .execCommand(command, option)
+          .then((res) => {
+            return res;
+          });
+        if (_.isString(result.stderr))
+          if (result.stderr)
+            throw new Error(
+              `command fail [ ${command} ], stderr [ ${result.stderr} ]`
+            );
         resolve(result);
       } catch (e) {
         console.log(`execCommandStrict Error : \n${e}`);
@@ -128,7 +159,12 @@ export default class RemoteSsh {
             return res.stdout;
           })
           .catch(() => {});
-        if (!_.isUndefined(localFileMd5) && !_.isNull(remoteFileMd5) && localFileMd5 === remoteFileMd5) resolve(true);
+        if (
+          !_.isUndefined(localFileMd5) &&
+          !_.isNull(remoteFileMd5) &&
+          localFileMd5 === remoteFileMd5
+        )
+          resolve(true);
         else resolve(false);
       } catch (e) {
         console.log(`isSame Error : \n${e}`);
@@ -157,9 +193,11 @@ export default class RemoteSsh {
         .execCommand(`openssl dgst ${remoteFile} | awk '{print $2}'`)
         .then(async (res) => {
           if (res.stderr.match("not found"))
-            return await this.session.execCommand(`digest -a md5 ${remoteFile}`).then((res) => {
-              return res.stdout;
-            });
+            return await this.session
+              .execCommand(`digest -a md5 ${remoteFile}`)
+              .then((res) => {
+                return res.stdout;
+              });
           else return res.stdout;
         })
         .catch(() => {
@@ -181,30 +219,40 @@ export default class RemoteSsh {
         let localFileMd5 = await this.localMd5file(localFile);
         let remoteFileMd5 = await this.remoteMd5file(remoteFile);
 
-        if (localFileMd5 && remoteFileMd5 && localFileMd5 === remoteFileMd5) hasRemoteFile = true;
+        if (localFileMd5 && remoteFileMd5 && localFileMd5 === remoteFileMd5)
+          hasRemoteFile = true;
 
-        if (hasRemoteFile) console.log(`이미 "${path.basename(remoteFile)}" 파일이 원격지에 있습니다.`);
+        if (hasRemoteFile)
+          console.log(
+            `이미 "${path.basename(remoteFile)}" 파일이 원격지에 있습니다.`
+          );
 
         if (!hasRemoteFile) {
           let tryCount = 0;
           while (tryCount <= this._maxRetryCount) {
             tryCount++;
-            const result = await this.session.putFile(localFile, remoteFile).catch((err) => {
-              return err;
-            });
+            const result = await this.session
+              .putFile(localFile, remoteFile)
+              .catch((err) => {
+                return err;
+              });
 
-            if (_.isUndefined(result) || result.constructor.name !== "Error") break;
+            if (_.isUndefined(result) || result.constructor.name !== "Error")
+              break;
             else if (tryCount === this._maxRetryCount) throw result;
           }
         }
 
         if (type === "text" && posix) {
           const tmpRemoteFile = remoteFile + ".tmp";
-          await this.execCommand(`tr -d '\\015' < ${remoteFile} > ${tmpRemoteFile}`);
+          await this.execCommand(
+            `tr -d '\\015' < ${remoteFile} > ${tmpRemoteFile}`
+          );
           await this.execCommand(`mv ${tmpRemoteFile} ${remoteFile}`);
         }
 
-        if (!remoteFileMd5) remoteFileMd5 = await this.remoteMd5file(remoteFile);
+        if (!remoteFileMd5)
+          remoteFileMd5 = await this.remoteMd5file(remoteFile);
 
         resolve({ localMd5: localFileMd5, remoteMd5: remoteFileMd5 });
       } catch (e) {
@@ -219,7 +267,8 @@ export default class RemoteSsh {
       try {
         await this.connect(this.config);
 
-        for (let idx in files) await this.putFile(files[idx].localFile, files[idx].remoteFile);
+        for (let idx in files)
+          await this.putFile(files[idx].localFile, files[idx].remoteFile);
         resolve(true);
       } catch (e) {
         // console.log(`putFiles Error : \n${e}`);
@@ -237,9 +286,13 @@ export default class RemoteSsh {
         let localFileMd5 = await this.localMd5file(localFile);
         let remoteFileMd5 = await this.remoteMd5file(remoteFile);
 
-        if (localFileMd5 && remoteFileMd5 && localFileMd5 === remoteFileMd5) hasLocalFile = true;
+        if (localFileMd5 && remoteFileMd5 && localFileMd5 === remoteFileMd5)
+          hasLocalFile = true;
 
-        if (hasLocalFile) console.log(`이미 "${path.basename(localFile)}" 파일을 가지고 있습니다.`);
+        if (hasLocalFile)
+          console.log(
+            `이미 "${path.basename(localFile)}" 파일을 가지고 있습니다.`
+          );
 
         // console.log(`localFileMd5 : ${localFileMd5}`);
         // console.log(`remoteFileMd5 : ${remoteFileMd5}`);
@@ -250,7 +303,11 @@ export default class RemoteSsh {
             const result = await this.session
               .getFile(localFile, remoteFile, givenSftp, givenOpts)
               .then(() => {
-                console.log(`get file local[${path.basename(localFile)}] from remote[${path.basename(remoteFile)}]`);
+                console.log(
+                  `get file local[${path.basename(
+                    localFile
+                  )}] from remote[${path.basename(remoteFile)}]`
+                );
               })
               .catch((err) => {
                 return err;
@@ -282,7 +339,9 @@ export default class RemoteSsh {
       try {
         await this.connect(this.config);
 
-        const res = await this.session.execCommand(`if [ -d "${remotePath}" ];then echo yes; fi`);
+        const res = await this.session.execCommand(
+          `if [ -d "${remotePath}" ];then echo yes; fi`
+        );
         if (_.isEmpty(res.stdout)) resolve(false);
         else resolve(true);
       } catch (e) {
@@ -297,7 +356,9 @@ export default class RemoteSsh {
       try {
         await this.connect(this.config);
 
-        const res = await this.session.execCommand(`if [ -f "${remotePath}" ];then echo yes; fi`);
+        const res = await this.session.execCommand(
+          `if [ -f "${remotePath}" ];then echo yes; fi`
+        );
         if (_.isEmpty(res.stdout)) resolve(false);
         else resolve(true);
       } catch (e) {
@@ -352,17 +413,24 @@ export default class RemoteSsh {
 
         if (option.recursive) {
           const remoteDirectory = path.dirname(remoteFile);
-          await this.execCommand(`mkdir -p ${remoteDirectory};echo '${buffer}' | tr -d '\\015' > ${remoteFile}`);
-        } else await this.execCommand(`echo '${buffer}' | tr -d '\\015' > ${remoteFile}`);
+          await this.execCommand(
+            `mkdir -p ${remoteDirectory};echo '${buffer}' | tr -d '\\015' > ${remoteFile}`
+          );
+        } else
+          await this.execCommand(
+            `echo '${buffer}' | tr -d '\\015' > ${remoteFile}`
+          );
         resolve(true);
       } catch (e) {
-        // console.log(`writeBufferToFile Error : \n${e}`);
         reject(e);
       }
     });
   }
 
-  writeBufferToFileList(bufferList = [{ buffer: "", remoteFile: "" }], option = { recursive: false }) {
+  writeBufferToFileList(
+    bufferList = [{ buffer: "", remoteFile: "" }],
+    option = { recursive: false }
+  ) {
     return new Promise(async (resolve, reject) => {
       try {
         await this.connect(this.config);
@@ -374,7 +442,8 @@ export default class RemoteSsh {
           if (option.recursive) {
             const remoteDirectory = path.dirname(remoteFile);
             command += `mkdir -p ${remoteDirectory};echo '${buffer}' | tr -d '\\015' > ${remoteFile}\n`;
-          } else command += `echo '${buffer}' | tr -d '\\015' > ${remoteFile}\n`;
+          } else
+            command += `echo '${buffer}' | tr -d '\\015' > ${remoteFile}\n`;
         }
         await this.execCommand(command);
         resolve(true);
